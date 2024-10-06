@@ -36,25 +36,32 @@ async function calculateLiveWirePath(start, end, isTemp = false) {
     const currentY = Math.floor(currentIndex / width);
 
     if (isCalculating) {
-      drawProcessedPixel(currentX, currentY);
+      await drawProcessedPixel(currentX, currentY);
     }
 
     if (currentX === end.x && currentY === end.y) {
       const path = reconstructPath(currentIndex);
       const pathCost = totalCost[currentIndex];
-      if (pathCost < minCost || (pathCost === minCost && path.length < bestPath.length)) {
+      if (
+        pathCost < minCost ||
+        (pathCost === minCost && path.length < bestPath.length)
+      ) {
         minCost = pathCost;
         bestPath = path;
       }
     }
 
-    if (bestPath.length > 0 && shouldStopEarly(currentIndex, queue, minCost)) break;
+    if (bestPath.length > 0 && shouldStopEarly(currentIndex, queue, minCost))
+      break;
 
     await processNeighbors(currentIndex, end, isTemp, queue, minCost, bestPath);
   }
 
   isCalculating = false;
-  bestPath = bestPath.length > 0 ? bestPath : reconstructPath(coordinateToIndex(end.x, end.y));
+  bestPath =
+    bestPath.length > 0
+      ? bestPath
+      : reconstructPath(coordinateToIndex(end.x, end.y));
   pathCache.set(cacheKey, bestPath);
   tempPath = isTemp ? bestPath : null;
 
@@ -74,19 +81,29 @@ function resetDataStructures() {
   previous.fill(null);
 }
 
-function drawProcessedPixel(x, y) {
+async function drawProcessedPixel(x, y) {
   fill(255, 255, 0); // Yellow color
   noStroke();
   rect(x, y, 1, 1);
-//   await sleep(animationDelay);
+    // await sleep(animationDelay);
+  await sleep(10);
 }
 
 function shouldStopEarly(currentIndex, queue, minCost) {
-  return totalCost[currentIndex] > minCost || 
-         (totalCost[currentIndex] === minCost && queue.peek().priority >= minCost);
+  return (
+    totalCost[currentIndex] > minCost ||
+    (totalCost[currentIndex] === minCost && queue.peek().priority >= minCost)
+  );
 }
 
-async function processNeighbors(currentIndex, end, isTemp, queue, minCost, bestPath) {
+async function processNeighbors(
+  currentIndex,
+  end,
+  isTemp,
+  queue,
+  minCost,
+  bestPath
+) {
   const currentX = currentIndex % width;
   const currentY = Math.floor(currentIndex / width);
 
@@ -102,9 +119,15 @@ async function processNeighbors(currentIndex, end, isTemp, queue, minCost, bestP
       const neighborIndex = coordinateToIndex(neighborX, neighborY);
       if (processed[neighborIndex]) continue;
 
-      const linkCost = calculateLinkCost(currentX, currentY, neighborX, neighborY);
+      const linkCost = calculateLinkCost(
+        currentX,
+        currentY,
+        neighborX,
+        neighborY
+      );
       const pathLengthPenalty = 0.1; // Adjust this value to change the impact of path length
-      const newTotalCost = totalCost[currentIndex] + linkCost + pathLengthPenalty;
+      const newTotalCost =
+        totalCost[currentIndex] + linkCost + pathLengthPenalty;
 
       if (newTotalCost < totalCost[neighborIndex]) {
         totalCost[neighborIndex] = newTotalCost;
@@ -126,7 +149,10 @@ async function processNeighbors(currentIndex, end, isTemp, queue, minCost, bestP
         // Check if we've reached the end point
         if (neighborX === end.x && neighborY === end.y) {
           const path = reconstructPath(neighborIndex);
-          if (newTotalCost < minCost || (newTotalCost === minCost && path.length < bestPath.length)) {
+          if (
+            newTotalCost < minCost ||
+            (newTotalCost === minCost && path.length < bestPath.length)
+          ) {
             minCost = newTotalCost;
             bestPath = path;
           }
