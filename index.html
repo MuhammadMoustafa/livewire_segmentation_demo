@@ -1,36 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Live Wire Segmentation Algorithm Tutorial</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-      }
-      #tutorial {
-        margin-bottom: 20px;
-      }
-      button {
-        margin: 5px;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="tutorial">
-      <h1>Live Wire Segmentation Tutorial</h1>
-    </div>
 
-  <!-- Add p5.js library -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Wire Segmentation</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
 
-  <!-- p5.js DOM for handling buttons and events -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.dom.min.js"></script> -->
-
-  <!-- Dijkstra library for computing shortest path -->
-  <!-- <script src="https://unpkg.com/browse/dijkstrajs@1.0.3/dijkstra.js"></script> -->
-
-  <!-- Custom JavaScript for live wire segmentation -->
+<body class="bg-gray-100 p-4">
+  <div class="container mx-auto">
+    <h1 class="text-3xl font-bold mb-4">Live Wire Segmentation</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div id="canvasContainer" class="bg-white p-4 rounded shadow"></div>
+      <div class="bg-white p-4 rounded shadow">
+        <div id="controlButtons" class="mb-4"></div>
+        <div id="animationControls" class="mb-4"></div>
+        <div id="infoDisplay"></div>
+      </div>
+    </div>
+  </div>
   <script src="livewire.js"></script>
-  </body>
+</body>
 </html>
