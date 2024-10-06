@@ -4,7 +4,6 @@ let segments = [];
 let isAnchorSet = false;
 let anchorPoint = null;
 let tempPath = null;
-let isCalculating = false;
 
 // UI elements
 let coordsDisplay, pixelValueDisplay, currentCostDisplay, minCostDisplay;

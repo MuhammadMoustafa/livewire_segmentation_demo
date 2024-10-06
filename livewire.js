@@ -1,5 +1,6 @@
 let costMap, processed, totalCost, previous;
 const pathCache = new Map();
+let isCalculating = false;
 
 function initializeAlgorithmDataStructures() {
   costMap = new Array(width * height).fill(Infinity);
@@ -22,7 +23,7 @@ async function calculateLiveWirePath(start, end, isTemp = false) {
   queue.enqueue(startIndex, 0);
 
   let minCost = Infinity;
-  let bestPath = null;
+  let bestPath = [];
   isCalculating = true;
   tempPath = [];
 
@@ -34,25 +35,26 @@ async function calculateLiveWirePath(start, end, isTemp = false) {
     const currentX = currentIndex % width;
     const currentY = Math.floor(currentIndex / width);
 
-    if (animateCalculations && isTemp) {
-      await animateProcessedPixel(currentX, currentY);
+    if (isCalculating) {
+      drawProcessedPixel(currentX, currentY);
     }
 
     if (currentX === end.x && currentY === end.y) {
       const path = reconstructPath(currentIndex);
-      if (path.length < minCost) {
-        minCost = path.length;
+      const pathCost = totalCost[currentIndex];
+      if (pathCost < minCost || (pathCost === minCost && path.length < bestPath.length)) {
+        minCost = pathCost;
         bestPath = path;
       }
     }
 
-    if (bestPath && shouldStopEarly(currentIndex, minCost, queue)) break;
+    if (bestPath.length > 0 && shouldStopEarly(currentIndex, queue, minCost)) break;
 
-    await processNeighbors(currentIndex, end, isTemp, queue, minCost);
+    await processNeighbors(currentIndex, end, isTemp, queue, minCost, bestPath);
   }
 
   isCalculating = false;
-  bestPath = bestPath || reconstructPath(coordinateToIndex(end.x, end.y));
+  bestPath = bestPath.length > 0 ? bestPath : reconstructPath(coordinateToIndex(end.x, end.y));
   pathCache.set(cacheKey, bestPath);
   tempPath = isTemp ? bestPath : null;
 
@@ -72,64 +74,69 @@ function resetDataStructures() {
   previous.fill(null);
 }
 
-async function animateProcessedPixel(x, y) {
-  fill(255, 255, 0);
+function drawProcessedPixel(x, y) {
+  fill(255, 255, 0); // Yellow color
   noStroke();
   rect(x, y, 1, 1);
-  await sleep(animationDelay);
+//   await sleep(animationDelay);
 }
 
-function shouldStopEarly(currentIndex, minCost, queue) {
-  return totalCost[currentIndex] >= minCost && queue.peek().priority >= minCost;
+function shouldStopEarly(currentIndex, queue, minCost) {
+  return totalCost[currentIndex] > minCost || 
+         (totalCost[currentIndex] === minCost && queue.peek().priority >= minCost);
 }
 
-async function processNeighbors(currentIndex, end, isTemp, queue, minCost) {
-    const currentX = currentIndex % width;
-    const currentY = Math.floor(currentIndex / width);
-  
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        if (dx === 0 && dy === 0) continue;
-  
-        const neighborX = currentX + dx;
-        const neighborY = currentY + dy;
-  
-        if (!isValidPixel(neighborX, neighborY)) continue;
-  
-        const neighborIndex = coordinateToIndex(neighborX, neighborY);
-        if (processed[neighborIndex]) continue;
-  
-        const linkCost = calculateLinkCost(currentX, currentY, neighborX, neighborY);
-        const newTotalCost = totalCost[currentIndex] + linkCost;
-  
-        if (newTotalCost < totalCost[neighborIndex]) {
-          totalCost[neighborIndex] = newTotalCost;
-          previous[neighborIndex] = currentIndex;
-          queue.enqueue(neighborIndex, newTotalCost);
-  
-          updateCostDisplay(minCost, newTotalCost);
-  
-          if (animateCalculations && isTemp) {
-            await animateNeighbor(neighborX, neighborY);
-          }
-  
-          // Update tempPath for live red path
-          if (isTemp) {
-            tempPath = reconstructPath(neighborIndex);
-            drawTempPath();
-          }
-  
-          // Check if we've reached the end point
-          if (neighborX === end.x && neighborY === end.y) {
-            const path = reconstructPath(neighborIndex);
-            if (path.length < minCost) {
-              minCost = path.length;
-            }
+async function processNeighbors(currentIndex, end, isTemp, queue, minCost, bestPath) {
+  const currentX = currentIndex % width;
+  const currentY = Math.floor(currentIndex / width);
+
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      if (dx === 0 && dy === 0) continue;
+
+      const neighborX = currentX + dx;
+      const neighborY = currentY + dy;
+
+      if (!isValidPixel(neighborX, neighborY)) continue;
+
+      const neighborIndex = coordinateToIndex(neighborX, neighborY);
+      if (processed[neighborIndex]) continue;
+
+      const linkCost = calculateLinkCost(currentX, currentY, neighborX, neighborY);
+      const pathLengthPenalty = 0.1; // Adjust this value to change the impact of path length
+      const newTotalCost = totalCost[currentIndex] + linkCost + pathLengthPenalty;
+
+      if (newTotalCost < totalCost[neighborIndex]) {
+        totalCost[neighborIndex] = newTotalCost;
+        previous[neighborIndex] = currentIndex;
+        queue.enqueue(neighborIndex, newTotalCost);
+
+        updateCostDisplay(newTotalCost, minCost);
+
+        if (animateCalculations && isTemp) {
+          await animateNeighbor(neighborX, neighborY);
+        }
+
+        // Update tempPath for live red path
+        if (isTemp) {
+          tempPath = reconstructPath(neighborIndex);
+          drawTempPath();
+        }
+
+        // Check if we've reached the end point
+        if (neighborX === end.x && neighborY === end.y) {
+          const path = reconstructPath(neighborIndex);
+          if (newTotalCost < minCost || (newTotalCost === minCost && path.length < bestPath.length)) {
+            minCost = newTotalCost;
+            bestPath = path;
           }
         }
       }
     }
   }
+
+  return { minCost, bestPath };
+}
 
 function reconstructPath(endIndex) {
   const path = [];
@@ -159,9 +166,8 @@ function isValidPixel(x, y) {
   return x >= 0 && x < width && y >= 0 && y < height;
 }
 
-function updateCostDisplay(minCost, newTotalCost) {
+function updateCostDisplay(newTotalCost, minCost) {
   if (newTotalCost < minCost) {
-    minCost = newTotalCost;
     minCostDisplay.html(`Minimum Cost: ${minCost.toFixed(2)}`);
   }
   currentCostDisplay.html(`Current Cost: ${newTotalCost.toFixed(2)}`);
