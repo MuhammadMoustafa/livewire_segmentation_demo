@@ -36,7 +36,7 @@ async function calculateLiveWirePath(start, end, isTemp = false) {
     const currentX = currentIndex % width;
     const currentY = Math.floor(currentIndex / width);
 
-    if(isCalculating) drawProcessedPixel(currentX, currentY); // Store the pixel for later drawing
+    if (isCalculating) drawProcessedPixel(currentX, currentY); // Store the pixel for later drawing
 
     if (currentX === end.x && currentY === end.y) {
       const path = reconstructPath(currentIndex);
@@ -53,7 +53,7 @@ async function calculateLiveWirePath(start, end, isTemp = false) {
     if (bestPath.length > 0 && shouldStopEarly(currentIndex, queue, minCost))
       break;
 
-    await processNeighbors(currentIndex, end, isTemp, queue, minCost, bestPath);
+    minCost, bestPath = await processNeighbors(currentIndex, end, isTemp, queue, minCost, bestPath);
   }
 
   isCalculating = false;
@@ -82,17 +82,17 @@ function resetDataStructures() {
   processedPixels = []; // Reset processed pixels array
 }
 
-    function drawProcessedPixel(x, y) {
-      processedPixels.push({ x, y }); // Store the coordinates
-    }
-    
-    function drawProcessedPixels() {
-      fill(255, 255, 0); // Yellow color
-      noStroke();
-      for (const { x, y } of processedPixels) {
-        rect(x, y, 1, 1); // Draw each processed pixel
-      }
-    }
+function drawProcessedPixel(x, y) {
+  processedPixels.push({ x, y }); // Store the coordinates
+}
+
+function drawProcessedPixels() {
+  fill(255, 255, 0); // Yellow color
+  noStroke();
+  for (const { x, y } of processedPixels) {
+    rect(x, y, 1, 1); // Draw each processed pixel
+  }
+}
 
 function shouldStopEarly(currentIndex, queue, minCost) {
   return (
@@ -133,6 +133,11 @@ async function processNeighbors(
       const pathLengthPenalty = 0.1; // Adjust this value to change the impact of path length
       const newTotalCost =
         totalCost[currentIndex] + linkCost + pathLengthPenalty;
+
+      if (newTotalCost < minCost) {
+        console.log("True", newTotalCost, minCost);
+        minCost = newTotalCost;
+      }
 
       if (newTotalCost < totalCost[neighborIndex]) {
         totalCost[neighborIndex] = newTotalCost;
@@ -198,10 +203,8 @@ function isValidPixel(x, y) {
 }
 
 function updateCostDisplay(newTotalCost, minCost) {
-    console.log("updating cost", newTotalCost, minCost);
-  if (newTotalCost < minCost) {
-    minCostDisplay.html(`Minimum Cost: ${minCost.toFixed(2)}`);
-  }
+  console.log("updating cost", newTotalCost, minCost);
+  minCostDisplay.html(`Minimum Cost: ${minCost.toFixed(2)}`);
   currentCostDisplay.html(`Current Cost: ${newTotalCost.toFixed(2)}`);
 }
 
@@ -214,27 +217,4 @@ async function animateNeighbor(x, y) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-class PriorityQueue {
-  constructor() {
-    this.elements = [];
-  }
-
-  enqueue(element, priority) {
-    this.elements.push({ element, priority });
-    this.elements.sort((a, b) => a.priority - b.priority);
-  }
-
-  dequeue() {
-    return this.elements.shift().element;
-  }
-
-  isEmpty() {
-    return this.elements.length === 0;
-  }
-
-  peek() {
-    return this.elements[0];
-  }
 }
