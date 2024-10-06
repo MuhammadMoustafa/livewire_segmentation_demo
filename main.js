@@ -26,6 +26,7 @@ function draw() {
   if (!img) return;
 
   image(img, 0, 0);
+  drawProcessedPixels();
   drawSegments();
   drawAnchorPoint();
   drawTempPath();
@@ -41,6 +42,7 @@ function mousePressed() {
     setAnchorPoint(point);
   } else if (isCalculating) {
     isCalculating = false;
+    processedPixels = [];
   } else {
     finalizeSegment(point);
   }

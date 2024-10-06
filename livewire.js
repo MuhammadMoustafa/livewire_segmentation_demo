@@ -1,4 +1,5 @@
 let costMap, processed, totalCost, previous;
+let processedPixels = []; // To store processed pixels
 const pathCache = new Map();
 let isCalculating = false;
 
@@ -35,9 +36,7 @@ async function calculateLiveWirePath(start, end, isTemp = false) {
     const currentX = currentIndex % width;
     const currentY = Math.floor(currentIndex / width);
 
-    if (isCalculating) {
-      await drawProcessedPixel(currentX, currentY);
-    }
+    if(isCalculating) drawProcessedPixel(currentX, currentY); // Store the pixel for later drawing
 
     if (currentX === end.x && currentY === end.y) {
       const path = reconstructPath(currentIndex);
@@ -58,6 +57,7 @@ async function calculateLiveWirePath(start, end, isTemp = false) {
   }
 
   isCalculating = false;
+  processedPixels = [];
   bestPath =
     bestPath.length > 0
       ? bestPath
@@ -79,15 +79,20 @@ function resetDataStructures() {
   processed.fill(false);
   totalCost.fill(Infinity);
   previous.fill(null);
+  processedPixels = []; // Reset processed pixels array
 }
 
-async function drawProcessedPixel(x, y) {
-  fill(255, 255, 0); // Yellow color
-  noStroke();
-  rect(x, y, 1, 1);
-    // await sleep(animationDelay);
-  await sleep(10);
-}
+    function drawProcessedPixel(x, y) {
+      processedPixels.push({ x, y }); // Store the coordinates
+    }
+    
+    function drawProcessedPixels() {
+      fill(255, 255, 0); // Yellow color
+      noStroke();
+      for (const { x, y } of processedPixels) {
+        rect(x, y, 1, 1); // Draw each processed pixel
+      }
+    }
 
 function shouldStopEarly(currentIndex, queue, minCost) {
   return (
@@ -193,6 +198,7 @@ function isValidPixel(x, y) {
 }
 
 function updateCostDisplay(newTotalCost, minCost) {
+    console.log("updating cost", newTotalCost, minCost);
   if (newTotalCost < minCost) {
     minCostDisplay.html(`Minimum Cost: ${minCost.toFixed(2)}`);
   }
